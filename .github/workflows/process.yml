@@ -1,0 +1,37 @@
+name: Process
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  process:
+    name: Process
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Decode input file
+        env:
+          INPUT_FILE: ${{ github.workspace }}/input.csv
+        run: |
+          #!/bin/bash
+
+          # Decode the Base64 content and save to file
+          echo "INPUT_FILE_PATH" | base64 --decode > "$INPUT_FILE"
+
+          # Verify the file creation
+          if [ -f "$INPUT_FILE" ]; then
+              echo "File has been successfully decoded and saved to $INPUT_FILE"
+          else
+              echo "Failed to decode and save the file."
+          fi
+
+          echo "File saved to $INPUT_FILE"
+
+      - name: Archive input file
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: input-csv
+          path: input.csv
+          if-no-files-found: ignore
