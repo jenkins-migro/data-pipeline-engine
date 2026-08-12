@@ -1,0 +1,105 @@
+name: Zomato AnyPoint Deploy
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  ANYPOINT_USERNAME: ${{ secrets.ANYPOINT_USERNAME }}
+  ANYPOINT_PASSWORD: ${{ secrets.ANYPOINT_PASSWORD }}
+
+jobs:
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Running Unit Tests...
+        run: mvn clean test
+
+  deploy-standalone:
+    name: Deploy Standalone
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Deploying in Standalone mode...
+        run: mvn deploy -P standalone
+
+  deploy-anypoint:
+    name: Deploy to AnyPoint
+    needs: deploy-standalone
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Deploying to Anypoint Platform...
+        run: |
+          mvn deploy -P arm \
+          -Darm.target.name=local-4.0.0-ee \
+          -Danypoint.username="$ANYPOINT_USERNAME" \
+          -Danypoint.password="${ANYPOINT_PASSWORD}"
+
+  deploy-cloudhub:
+    name: Deploy to CloudHub
+    needs: deploy-anypoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Deploying to CloudHub...
+        run: |
+          mvn deploy -P cloudhub \
+          -Dmule.version=4.0.0 \
+          -Danypoint.username="$ANYPOINT_USERNAME" \
+          -Danypoint.password="${ANYPOINT_PASSWORD}"
+
+  notify:
+    name: Notify
+    needs: [unit-test, deploy-standalone, deploy-anypoint, deploy-cloudhub]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment succeeded
+        if: needs.deploy-cloudhub.result == 'success'
+        run: echo "✅ Deployment completed successfully!"
+
+      - name: Deployment failed
+        if: needs.deploy-cloudhub.result != 'success'
+        run: echo "❌ Deployment failed! Check logs for errors."
