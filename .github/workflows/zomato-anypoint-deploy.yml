@@ -3,6 +3,9 @@ name: Zomato AnyPoint Deploy
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 env:
   ANYPOINT_USERNAME: ${{ secrets.ANYPOINT_USERNAME }}
   ANYPOINT_PASSWORD: ${{ secrets.ANYPOINT_PASSWORD }}

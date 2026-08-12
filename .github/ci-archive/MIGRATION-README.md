@@ -74,6 +74,7 @@ Configure these under **Settings → Secrets and variables → Actions → New r
 ## Validation
 
 - Both workflows were validated with [`actionlint`](https://github.com/rhysd/actionlint) with no errors reported.
+- Both workflows declare an explicit `permissions: contents: read` block (least-privilege `GITHUB_TOKEN`), verified with CodeQL's Actions analysis (0 alerts).
 
 ## Follow-up
 

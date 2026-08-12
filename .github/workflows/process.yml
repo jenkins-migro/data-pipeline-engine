@@ -3,6 +3,9 @@ name: Process
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   process:
     name: Process
